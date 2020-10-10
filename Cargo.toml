@@ -1,0 +1,5 @@
+[package]
+name = "fen4"
+version = "0.1.0"
+authors = ["Benjamin Landers <benjaminrlanders@gmail.com>"]
+edition = "2018"
