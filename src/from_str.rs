@@ -26,7 +26,7 @@ impl FromStr for Piece {
     fn from_str(small: &str) -> Result<Self, Self::Err> {
         use PieceParseError::*;
         if small == "X" {
-            return Ok(Self::Wall);
+            return Ok(Piece::Wall);
         }
         let mut iter = small.chars();
         let color = if let Some(c) = iter.next() {
@@ -45,7 +45,7 @@ impl FromStr for Piece {
         if iter.next() != None {
             return Err(BadSize(iter.count() + 3));
         }
-        Ok(Self::Normal(color, shape))
+        Ok(Piece::Normal(color, shape))
     }
 }
 // Turns "0,1,1,0" into Some([false,true,true,false])

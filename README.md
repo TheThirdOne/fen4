@@ -18,5 +18,6 @@ fen4 = "0.1"
 ```
 
 ### Rust version requirements
-Works in stable rust currently, but unclear how far back is supported.
 
+fen4 requires Rustc version 1.32 or greater. This could certainly be lowered,
+but it is unlikely to be needed and would be a non-trivial amount of work.
