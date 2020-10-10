@@ -68,7 +68,7 @@ impl Default for Piece {
 /// '-'. All of the arrays are information about the players with the leftmost data
 ///  about Red and proceding clockwise. Most of this is parsed in one go, but the
 /// extra_options is just stored as a string and can be parsed if it is needed.
-/// 
+///
 /// The final integer in the metadata format does not have a clear meaning I have
 /// been able to find. It seems to trigger a setting for custom position, but all
 /// fen4's are custom except the default. If you find its use, please make and issue.

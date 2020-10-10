@@ -48,7 +48,7 @@ impl FromStr for Piece {
         Ok(Self::Normal(color, shape))
     }
 }
-
+// Turns "0,1,1,0" into Some([false,true,true,false])
 fn fen4_castle_helper(four_digits: &str) -> Option<[bool; 4]> {
     let mut tmp = [false; 4];
     let mut count = 0;
@@ -68,6 +68,7 @@ fn fen4_castle_helper(four_digits: &str) -> Option<[bool; 4]> {
     Some(tmp)
 }
 
+// Turns "0,1,2,3" into Some([0,1,2,3])
 fn fen4_point_helper(four_digits: &str) -> Option<[u32; 4]> {
     let mut tmp = [0; 4];
     for (pos, val) in four_digits.split(",").enumerate() {
@@ -79,9 +80,7 @@ fn fen4_point_helper(four_digits: &str) -> Option<[u32; 4]> {
     Some(tmp)
 }
 
-// v turn    v king          v points  v extra
-// R-1,0,0,0-1,1,1,0-0,1,0,0-1,2,3,4-0-{'lifes':(2,2,2,2)}-
-//   ^ dead          ^ queen         ^ custom position?
+// Parses the entire metadata minus the last dash and makes a Board with that data filled in
 fn parse_meta(meta_data: &str) -> Option<Board> {
     let mut meta_sections = meta_data.split("-");
 
@@ -176,6 +175,9 @@ impl FromStr for Board {
 
         let mut board_base = parse_meta(meta_data).ok_or(BadMetaData)?;
         let mut row = 14;
+        // There is a lot of error handling obscuring the fact that this is actually really simple
+        // We keep track of where we are, starting at (14,0) and move to the right as we fill in cells. Finishing a row decreases our row by 1 and resets our column.
+        // Cells can be either a number that shifts us thta much to the right or a Piece which we put on the Board and shift by 1.
         for line in board.split("/") {
             if row == 0 {
                 return Err(BadBoardSize(TooManyRows, row));

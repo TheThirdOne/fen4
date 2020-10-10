@@ -25,6 +25,7 @@ impl fmt::Display for Piece {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Write out a line like: R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-\n
         write!(
             f,
             "{}",
@@ -57,6 +58,8 @@ impl fmt::Display for Board {
             write!(f, "{}-", self.extra_options)?;
         }
         write!(f, "\n")?;
+
+        // Write out 14 lines like: 3,yP,yP,yP,yP,yP,yP,yP,yP,3/\n
         for i in (0..14).rev() {
             let mut empties = 0;
             for j in 0..13 {
