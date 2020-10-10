@@ -37,7 +37,7 @@ impl Default for Piece {
 /// than the end and has some differences in what metadata is stored.
 ///
 /// The default position (with no whitespace) is:
-/// ```
+/// ```text
 ///     R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-
 ///     3,yR,yN,yB,yK,yQ,yB,yN,yR,3/
 ///     3,yP,yP,yP,yP,yP,yP,yP,yP,3/
@@ -58,7 +58,7 @@ impl Default for Piece {
 /// metadata is useless in Teams, but is there because the format is shared with the FFA mode.
 ///
 /// The metadata format is parsed into the struct as shown here:
-/// ```
+/// ```text
 ///     v turn    v king          v points  v extra
 ///     R-1,0,0,0-1,1,1,0-0,1,0,0-1,2,3,4-0-{'lifes':(2,2,2,2)}-
 ///       ^ dead          ^ queen         ^ custom position?
