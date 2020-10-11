@@ -120,7 +120,7 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Fen4ParseError {
+pub enum BoardParseError {
     NoDash,
     BadMetaData,
     BadBoardSize(BoardSize, usize),
@@ -137,10 +137,10 @@ pub enum BoardSize {
     TooFewRows,
 }
 
-impl std::fmt::Display for Fen4ParseError {
+impl std::fmt::Display for BoardParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use BoardSize::*;
-        use Fen4ParseError::*;
+        use BoardParseError::*;
         match self {
             NoDash => write!(f,"No '-' was found in the fen. Fen4's should start with metadata about castling, turn, and more."),
             BadMetaData => write!(f,"Something went wrong with metadata parsing"),
@@ -157,13 +157,13 @@ impl std::fmt::Display for Fen4ParseError {
     }
 }
 
-impl std::error::Error for Fen4ParseError {}
+impl std::error::Error for BoardParseError {}
 
 impl FromStr for Board {
-    type Err = Fen4ParseError;
+    type Err = BoardParseError;
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
         use BoardSize::*;
-        use Fen4ParseError::*;
+        use BoardParseError::*;
         let last_dash = if let Some(tmp) = fen.rfind("-") {
             tmp
         } else {
