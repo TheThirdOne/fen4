@@ -23,6 +23,18 @@ impl fmt::Display for Piece {
     }
 }
 
+impl fmt::Display for TaggedData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.tags.len() != 0 {
+            write!(f, "'{}':{}", self.tags[0].0, self.tags[0].1)?;
+            for (label, value) in &self.tags[1..] {
+                write!(f, ",'{}':{}", label, value)?;
+            }
+        }
+        Ok(())
+    }
+}
+
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Write out a line like: R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-\n
@@ -54,8 +66,8 @@ impl fmt::Display for Board {
             write!(f, ",{}", p)?;
         }
         write!(f, "-0-")?;
-        if self.extra_options != "" {
-            write!(f, "{}-", self.extra_options)?;
+        if self.extra_options.tags.len() != 0 {
+            write!(f, "{{{}}}-", self.extra_options)?;
         }
         write!(f, "\n")?;
 

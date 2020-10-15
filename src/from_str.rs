@@ -101,9 +101,9 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
         return None;
     }
     let extra_options = if let Some(extra) = meta_sections.next() {
-        extra.to_owned()
+        extra.parse().ok()?
     } else {
-        "".to_owned()
+        TaggedData { tags: Vec::new() }
     };
     if None != meta_sections.next() {
         return None;
@@ -117,6 +117,42 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
         extra_options,
         board: Default::default(),
     })
+}
+
+impl FromStr for TaggedData {
+    type Err = ();
+    fn from_str(tagged: &str) -> Result<Self, Self::Err> {
+        let mut current = tagged.strip_prefix('{').ok_or(())?;
+        let mut tags = Vec::new();
+        if current == "}" || !current.ends_with('}') {
+            return Err(());
+        }
+        while let Some(separator) = current.find(':') {
+            let (label, rest) = current.split_at(separator);
+            current = rest.split_at(1).1;
+            let label_trimmed = label
+                .strip_prefix('\'')
+                .ok_or(())?
+                .strip_suffix('\'')
+                .ok_or(())?;
+            let value_end = if current.starts_with('(') {
+                current.find(')').ok_or(())? + 1
+            } else {
+                current.find(|c| c == ',' || c == '}').unwrap()
+            };
+            let (value, tmp) = current.split_at(value_end);
+            current = tmp;
+            tags.push((label_trimmed.to_owned(), value.to_owned()));
+            if current == "}" {
+                break;
+            }
+            current = current.strip_prefix(',').ok_or(())?;
+        }
+        if current != "}" {
+            return Err(());
+        }
+        Ok(Self { tags })
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -139,8 +175,8 @@ pub enum BoardSize {
 
 impl std::fmt::Display for BoardParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use BoardSize::*;
         use BoardParseError::*;
+        use BoardSize::*;
         match self {
             NoDash => write!(f,"No '-' was found in the fen. Fen4's should start with metadata about castling, turn, and more."),
             BadMetaData => write!(f,"Something went wrong with metadata parsing"),
@@ -162,8 +198,8 @@ impl std::error::Error for BoardParseError {}
 impl FromStr for Board {
     type Err = BoardParseError;
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
-        use BoardSize::*;
         use BoardParseError::*;
+        use BoardSize::*;
         let last_dash = if let Some(tmp) = fen.rfind("-") {
             tmp
         } else {

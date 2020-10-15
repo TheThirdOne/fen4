@@ -79,6 +79,47 @@ pub struct Board {
     pub castling_king: [bool; 4],
     pub castling_queen: [bool; 4],
     pub points: [u32; 4],
-    pub extra_options: String,
+    pub extra_options: TaggedData,
     pub board: [[Piece; 15]; 15],
+}
+
+/// Additional options in the FEN4 format stored as a list of key value pairs.
+///
+/// In addition to the always present options in a FEN4, there are also options
+/// that are only present if rule variants are enabled. Notable examples would
+/// be "en passant" (because its not considered standard) and "N-Check"
+///
+/// The format uses a series of labeled elements separated by commas. The highlevel
+/// structure looks like `{'label':value,'label2':value2}`.
+///
+/// Values seem to be able to take several types. But the ones that are confirmed are:
+///   - Strings `'string_value'`
+///   - Numbers `65900`
+///   - Booleans `true` and `false`
+///   - Arrays `(valueRed, valueBlue, valueYellow, valueGreen)`
+///
+/// Examples of known labels used are:
+///   - `'enPassant':('j3:j4','','','')`
+///     - The first position is where a pawn can capture and the second is where the passing pawn should be removed in the event of a capture.
+///     - This is neccessary notation because some types of fairy pawns move diagonally. Without the extra information it could be ambiguous.
+///   - `'lives':(9,6,4,0)`
+///     - Indicates number of lives left for the N-check variant
+///   - `'pawnsBaseRank':8`
+///     - The rank on which pawns can jump forward 2 square (default:2)
+///     - a value of `0` indicates pawns never move more than 1
+///   - `'royal':('a4','b5','c6','d7')`
+///     - Used to indicate which piece should be considered the king for purposes of checks
+///     - Neccessary in cases of multiple kings (of the same color) or for making a different piece act as the leader
+///     - This seems to have previously been called 'kingSquares'
+///   - `'uniquify':94403`
+///     - It is not clear what this actually does
+///   - `'resigned':(true,true,false,false)` and `'flagged':(false,true,false,false)`
+///     - Both seem to be neccesssary for the "DeadKingWalking" feature.
+///
+/// Rather than parse the known options, TaggedData stores the label as the characters
+/// between the `'`s and the value as the characters between `:` and `,` or `}`.
+/// All of the tagged values are stored a list of `(label,value)` pairs.
+#[derive(Debug, PartialEq)]
+pub struct TaggedData {
+    pub tags: Vec<(String, String)>,
 }
