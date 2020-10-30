@@ -2,23 +2,47 @@ use std::fmt;
 
 use crate::types::*;
 
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.row >= 14 || self.col >= 14 {
+            eprintln!("BAD POSITION {} {}", self.row, self.col);
+            return Err(fmt::Error);
+        }
+        let column_letter: char = ((self.col as u8) + b'a').into();
+        write!(f, "{}{}", column_letter, self.row + 1)
+    }
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Color::Turn(tc) => match tc {
+                    TurnColor::Red => "r",
+                    TurnColor::Blue => "b",
+                    TurnColor::Yellow => "y",
+                    TurnColor::Green => "g",
+                },
+                Color::Dead(None) => "d",
+                Color::Dead(Some(tc)) => match tc {
+                    TurnColor::Red => "dr",
+                    TurnColor::Blue => "db",
+                    TurnColor::Yellow => "dy",
+                    TurnColor::Green => "dg",
+                },
+            }
+        )
+    }
+}
+
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Piece::Empty => write!(f, ""),
             Piece::Wall => write!(f, "X"),
-            Piece::Normal(color, shape) => write!(
-                f,
-                "{}{}",
-                match color {
-                    Color::Red => "r",
-                    Color::Blue => "b",
-                    Color::Yellow => "y",
-                    Color::Green => "g",
-                    Color::Dead => "d",
-                },
-                shape
-            ),
+            Piece::Normal(color, shape) => write!(f, "{}{}", color, shape),
         }
     }
 }
@@ -42,11 +66,10 @@ impl fmt::Display for Board {
             f,
             "{}",
             match self.turn {
-                Color::Red => "R",
-                Color::Blue => "B",
-                Color::Yellow => "Y",
-                Color::Green => "G",
-                Color::Dead => "D",
+                TurnColor::Red => "R",
+                TurnColor::Blue => "B",
+                TurnColor::Yellow => "Y",
+                TurnColor::Green => "G",
             }
         )?;
         write!(f, "-{}", if self.dead[0] { "1" } else { "0" })?;

@@ -1,20 +1,35 @@
-/// Simple enum for color
+/// Position on the board e.g. a4
 ///
-/// Dead also counts as a color, because dead pieces can go the board.
-#[derive(Debug, PartialEq)]
-pub enum Color {
+/// Both row and col should be in the range 0-13.
+#[derive(PartialEq, Clone, Debug)]
+pub struct Position {
+    pub row: usize,
+    pub col: usize,
+}
+
+/// Simple enum for colors / players.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum TurnColor {
     Red,
     Blue,
     Yellow,
     Green,
-    Dead,
+}
+
+/// Color modifier for pieces
+///
+/// Includes normal pieces, dead pieces, and dead pieces that also track which player they came from.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Color {
+    Turn(TurnColor),
+    Dead(Option<TurnColor>),
 }
 
 /// Simple representation of pieces that allows all types of fairy pieces
 /// The trick is to just use the character that the notation uses to represent that piece.
 ///
 /// Walls and empty cells are special, but everything else has a color as well.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Piece {
     Empty,
     Wall,
@@ -72,15 +87,15 @@ impl Default for Piece {
 /// The final integer in the metadata format does not have a clear meaning I have
 /// been able to find. It seems to trigger a setting for custom position, but all
 /// fen4's are custom except the default. If you find its use, please make and issue.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Board {
-    pub turn: Color,
+    pub turn: TurnColor,
     pub dead: [bool; 4],
     pub castling_king: [bool; 4],
     pub castling_queen: [bool; 4],
     pub points: [u32; 4],
     pub extra_options: TaggedData,
-    pub board: [[Piece; 15]; 15],
+    pub board: [[Piece; 14]; 14],
 }
 
 /// Additional options in the FEN4 format stored as a list of key value pairs.
@@ -116,10 +131,14 @@ pub struct Board {
 ///   - `'resigned':(true,true,false,false)` and `'flagged':(false,true,false,false)`
 ///     - Both seem to be neccesssary for the "DeadKingWalking" feature.
 ///
+/// The labels have a preferred order. For the known lables this is royal/kingSquares,
+/// lives, resigned, flagged, enPassant, pawnBaseRank. uniquify is after lives,
+/// but otherwise does not have a clear position.
+///
 /// Rather than parse the known options, TaggedData stores the label as the characters
 /// between the `'`s and the value as the characters between `:` and `,` or `}`.
 /// All of the tagged values are stored a list of `(label,value)` pairs.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TaggedData {
     pub tags: Vec<(String, String)>,
 }

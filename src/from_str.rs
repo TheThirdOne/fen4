@@ -1,8 +1,45 @@
+use std::convert::TryInto;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
 use crate::types::*;
 
+use thiserror::Error;
+
+#[derive(Error, PartialEq, Clone, Debug)]
+pub enum PositionError {
+    #[error("'{0}' is not a valid column. Valid columns are 'a'-'n'")]
+    ColumnInvalid(char),
+    #[error("'{0}' is not a valid row. Valid rows are 1-14")]
+    RowInvalid(usize),
+    #[error("Position is malformed. Positions should take the form \"a4\"")]
+    Other,
+}
+
+impl FromStr for Position {
+    type Err = PositionError;
+    fn from_str(small: &str) -> Result<Self, Self::Err> {
+        let mut iter = small.chars();
+        let column_letter = iter.next().ok_or(PositionError::Other)?;
+        if column_letter > 'n' || column_letter < 'a' {
+            return Err(PositionError::ColumnInvalid(column_letter));
+        }
+
+        let a: u32 = 'a'.into();
+        let mut column_num: u32 = column_letter.into();
+        column_num -= a;
+        let col: usize = column_num.try_into().unwrap(); // If earlier should guarentee this succeeds
+
+        let number_str = iter.as_str();
+        let row = number_str
+            .parse::<usize>()
+            .map_err(|_| PositionError::Other)?;
+        if row == 0 || row > 14 {
+            return Err(PositionError::RowInvalid(row));
+        }
+        Ok(Position { col, row: row - 1 })
+    }
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PieceParseError {
     BadColor(char),
@@ -14,7 +51,7 @@ impl std::fmt::Display for PieceParseError {
         use PieceParseError::*;
         match self {
             BadColor(c) => write!(f,"Bad Color '{}'. Only 'r', 'b', 'y', 'g', and 'd' are valid colors.",c),
-            BadSize(s) => write!(f,"Bad Size {}. Pieces like \"X\" or \"rK\" are the only valid types. Longer strings are generally invalid and empty string is purposly left out.",s),
+            BadSize(s) => write!(f,"Bad Size {}. Pieces like \"X\" , \"rK\" or \"drK\" are the only valid types. Longer strings are generally invalid and empty string is purposly left out.",s),
         }
     }
 }
@@ -28,14 +65,28 @@ impl FromStr for Piece {
         if small == "X" {
             return Ok(Piece::Wall);
         }
-        let mut iter = small.chars();
+        let mut iter = small.chars().peekable();
         let color = if let Some(c) = iter.next() {
+            use Color::*;
+            use TurnColor::*;
             match c {
-                'r' => Color::Red,
-                'b' => Color::Blue,
-                'y' => Color::Yellow,
-                'g' => Color::Green,
-                'd' => Color::Dead,
+                'r' => Turn(Red),
+                'b' => Turn(Blue),
+                'y' => Turn(Yellow),
+                'g' => Turn(Green),
+                'd' => {
+                    let tmp = match iter.peek() {
+                        Some('r') => Dead(Some(Red)),
+                        Some('b') => Dead(Some(Blue)),
+                        Some('y') => Dead(Some(Yellow)),
+                        Some('g') => Dead(Some(Green)),
+                        _ => Dead(None),
+                    };
+                    if let Dead(Some(_)) = tmp {
+                        iter.next();
+                    }
+                    tmp
+                }
                 _ => return Err(BadColor(c)),
             }
         } else {
@@ -86,10 +137,10 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
 
     let color_str = meta_sections.next()?;
     let turn = match color_str {
-        "R" => Color::Red,
-        "B" => Color::Blue,
-        "Y" => Color::Yellow,
-        "G" => Color::Green,
+        "R" => TurnColor::Red,
+        "B" => TurnColor::Blue,
+        "Y" => TurnColor::Yellow,
+        "G" => TurnColor::Green,
         _ => return None,
     };
 
