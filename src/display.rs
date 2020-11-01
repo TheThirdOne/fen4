@@ -47,12 +47,100 @@ impl fmt::Display for Piece {
     }
 }
 
-impl fmt::Display for TaggedData {
+impl fmt::Display for Extra {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.tags.len() != 0 {
-            write!(f, "'{}':{}", self.tags[0].0, self.tags[0].1)?;
-            for (label, value) in &self.tags[1..] {
-                write!(f, ",'{}':{}", label, value)?;
+        fn royal_helper(f: &mut fmt::Formatter<'_>, value: &Option<Position>) -> fmt::Result {
+            if let Some(p) = value {
+                write!(f, "'{}'", p)
+            } else {
+                write!(f, "''")
+            }
+        }
+
+        fn en_passant_helper(
+            f: &mut fmt::Formatter<'_>,
+            value: &Option<(Position, Position)>,
+        ) -> fmt::Result {
+            if let Some((first, second)) = value {
+                write!(f, "'{}:{}'", first, second)
+            } else {
+                write!(f, "''")
+            }
+        }
+        if *self != Extra::default() {
+            let mut comma = false;
+            if &self.royal != &[None, None, None, None] {
+                write!(f, "'royal':(")?;
+                royal_helper(f, &self.royal[0])?;
+                write!(f, ",")?;
+                royal_helper(f, &self.royal[1])?;
+                write!(f, ",")?;
+                royal_helper(f, &self.royal[2])?;
+                write!(f, ",")?;
+                royal_helper(f, &self.royal[3])?;
+                write!(f, ")")?;
+                comma = true;
+            }
+            if let Some(lives) = self.lives {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(
+                    f,
+                    "'lives':({},{},{},{})",
+                    lives[0], lives[1], lives[2], lives[3]
+                )?;
+                comma = true;
+            }
+            if self.resigned != [false; 4] {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(
+                    f,
+                    "'resigned':({:?},{:?},{:?},{:?})",
+                    self.resigned[0], self.resigned[1], self.resigned[2], self.resigned[3]
+                )?;
+                comma = true;
+            }
+            if self.flagged != [false; 4] {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(
+                    f,
+                    "'flagged':({:?},{:?},{:?},{:?})",
+                    self.flagged[0], self.flagged[1], self.flagged[2], self.flagged[3]
+                )?;
+                comma = true;
+            }
+            if &self.enpassant != &[None, None, None, None] {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(f, "'enPassant':(")?;
+                en_passant_helper(f, &self.enpassant[0])?;
+                write!(f, ",")?;
+                en_passant_helper(f, &self.enpassant[1])?;
+                write!(f, ",")?;
+                en_passant_helper(f, &self.enpassant[2])?;
+                write!(f, ",")?;
+                en_passant_helper(f, &self.enpassant[3])?;
+                write!(f, ")")?;
+                comma = true;
+            }
+            if self.pawnbaserank != 2 {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(f, "'pawnBaseRank':{}", self.pawnbaserank)?;
+                comma = true;
+            }
+            if self.uniquify != 0 {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(f, "'uniquify':{}", self.uniquify)?;
             }
         }
         Ok(())
@@ -89,7 +177,7 @@ impl fmt::Display for Board {
             write!(f, ",{}", p)?;
         }
         write!(f, "-0-")?;
-        if self.extra_options.tags.len() != 0 {
+        if self.extra_options != Extra::default() {
             write!(f, "{{{}}}-", self.extra_options)?;
         }
         write!(f, "\n")?;

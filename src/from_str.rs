@@ -154,7 +154,7 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
     let extra_options = if let Some(extra) = meta_sections.next() {
         extra.parse().ok()?
     } else {
-        TaggedData { tags: Vec::new() }
+        Extra::default()
     };
     if None != meta_sections.next() {
         return None;
@@ -170,11 +170,33 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
     })
 }
 
-impl FromStr for TaggedData {
+fn split_array(array: &str) -> Result<[&str; 4], ()> {
+    let trimmed = array
+        .strip_prefix('(')
+        .ok_or(())?
+        .strip_suffix(')')
+        .ok_or(())?;
+    let mut out = [""; 4];
+    let mut i = 0;
+    for part in trimmed.split(',') {
+        if i > 3 {
+            return Err(());
+        }
+        out[i] = part;
+        i += 1;
+    }
+    if i == 4 {
+        Ok(out)
+    } else {
+        Err(())
+    }
+}
+
+impl FromStr for Extra {
     type Err = ();
     fn from_str(tagged: &str) -> Result<Self, Self::Err> {
         let mut current = tagged.strip_prefix('{').ok_or(())?;
-        let mut tags = Vec::new();
+        let mut extras: Self = Default::default();
         if current == "}" || !current.ends_with('}') {
             return Err(());
         }
@@ -193,16 +215,103 @@ impl FromStr for TaggedData {
             };
             let (value, tmp) = current.split_at(value_end);
             current = tmp;
-            tags.push((label_trimmed.to_owned(), value.to_owned()));
+            match label_trimmed {
+                "enPassant" => {
+                    let array = split_array(value)?;
+                    let mut i = 0;
+                    for pair in &array {
+                        if extras.enpassant[i] != None {
+                            return Err(());
+                        }
+                        let trimmed = pair
+                            .strip_prefix('\'')
+                            .ok_or(())?
+                            .strip_suffix('\'')
+                            .ok_or(())?;
+                        if trimmed != "" {
+                            let mut split = trimmed.split(':');
+                            let first = split.next().ok_or(())?;
+                            let second = split.next().ok_or(())?;
+                            if split.next() != None {
+                                return Err(());
+                            }
+                            extras.enpassant[i] = Some((
+                                first.parse::<Position>().map_err(|_| ())?,
+                                second.parse::<Position>().map_err(|_| ())?,
+                            ));
+                        }
+                        i += 1;
+                    }
+                }
+                "royal" | "kingSquares" => {
+                    let array = split_array(value)?;
+                    let mut i = 0;
+                    for position in &array {
+                        if extras.royal[i] != None {
+                            return Err(());
+                        }
+                        let trimmed = position
+                            .strip_prefix('\'')
+                            .ok_or(())?
+                            .strip_suffix('\'')
+                            .ok_or(())?;
+                        if trimmed != "" {
+                            extras.royal[i] = Some(trimmed.parse::<Position>().map_err(|_| ())?);
+                        }
+                        i += 1;
+                    }
+                }
+                "pawnBaseRank" | "uniquify" => {
+                    let number = value.parse::<usize>().map_err(|_| ())?;
+                    if label_trimmed == "uniquify" {
+                        extras.uniquify = number;
+                    } else {
+                        extras.pawnbaserank = number;
+                    }
+                }
+                "resigned" | "flagged" => {
+                    let array = split_array(value)?;
+                    let mut i = 0;
+                    let output = if label_trimmed == "flagged" {
+                        &mut extras.flagged
+                    } else {
+                        &mut extras.resigned
+                    };
+                    for truth in &array {
+                        if output[i] {
+                            return Err(());
+                        }
+                        output[i] = match *truth {
+                            "true" => true,
+                            "false" => false,
+                            _ => return Err(()),
+                        };
+                        i += 1;
+                    }
+                }
+                "lives" => {
+                    let array = split_array(value)?;
+                    let mut i = 0;
+                    if extras.lives != None {
+                        return Err(());
+                    }
+                    let mut tmp = [0; 4];
+                    for life in &array {
+                        tmp[i] = life.parse::<usize>().map_err(|_| ())?;
+                        i += 1;
+                    }
+                    extras.lives = Some(tmp);
+                }
+                _ => {
+                    return Err(());
+                }
+            }
             if current == "}" {
                 break;
             }
             current = current.strip_prefix(',').ok_or(())?;
         }
-        if current != "}" {
-            return Err(());
-        }
-        Ok(Self { tags })
+        Ok(extras)
     }
 }
 

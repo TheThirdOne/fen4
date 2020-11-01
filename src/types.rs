@@ -94,8 +94,30 @@ pub struct Board {
     pub castling_king: [bool; 4],
     pub castling_queen: [bool; 4],
     pub points: [u32; 4],
-    pub extra_options: TaggedData,
+    pub extra_options: Extra,
     pub board: [[Piece; 14]; 14],
+}
+
+const DEFAULT_FEN: &str = "R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-
+3,yR,yN,yB,yK,yQ,yB,yN,yR,3/
+3,yP,yP,yP,yP,yP,yP,yP,yP,3/
+14/
+bR,bP,10,gP,gR/
+bN,bP,10,gP,gN/
+bB,bP,10,gP,gB/
+bK,bP,10,gP,gQ/
+bQ,bP,10,gP,gK/
+bB,bP,10,gP,gB/
+bN,bP,10,gP,gN/
+bR,bP,10,gP,gR/
+14/
+3,rP,rP,rP,rP,rP,rP,rP,rP,3/
+3,rR,rN,rB,rQ,rK,rB,rN,rR,3";
+
+impl Default for Board {
+    fn default() -> Self {
+        DEFAULT_FEN.parse::<Self>().unwrap()
+    }
 }
 
 /// Additional options in the FEN4 format stored as a list of key value pairs.
@@ -135,10 +157,31 @@ pub struct Board {
 /// lives, resigned, flagged, enPassant, pawnBaseRank. uniquify is after lives,
 /// but otherwise does not have a clear position.
 ///
-/// Rather than parse the known options, TaggedData stores the label as the characters
-/// between the `'`s and the value as the characters between `:` and `,` or `}`.
-/// All of the tagged values are stored a list of `(label,value)` pairs.
+/// gameOver is an additional option, but only seems to appear in internal messages.
+/// It would fit between flagged and enPassant in terms of preferred order and stores
+/// the message that shows up at the end of the game.
 #[derive(Debug, PartialEq, Clone)]
-pub struct TaggedData {
-    pub tags: Vec<(String, String)>,
+pub struct Extra {
+    pub royal: [Option<Position>; 4],
+    pub lives: Option<[usize; 4]>,
+    pub resigned: [bool; 4],
+    pub flagged: [bool; 4],
+    // TODO: zombie options
+    pub enpassant: [Option<(Position, Position)>; 4],
+    pub pawnbaserank: usize,
+    pub uniquify: usize,
+}
+
+impl Default for Extra {
+    fn default() -> Self {
+        Self {
+            royal: Default::default(),
+            lives: None,
+            resigned: Default::default(),
+            flagged: Default::default(),
+            enpassant: Default::default(),
+            pawnbaserank: 2,
+            uniquify: 0,
+        }
+    }
 }
