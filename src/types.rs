@@ -76,17 +76,12 @@ impl Default for Piece {
 /// ```text
 ///     v turn    v king          v points  v extra
 ///     R-1,0,0,0-1,1,1,0-0,1,0,0-1,2,3,4-0-{'lifes':(2,2,2,2)}-
-///       ^ dead          ^ queen         ^ custom position?
+///       ^ dead          ^ queen         ^ ply since last pawn move or capture
 /// ```
 /// It starts with a Color, followed by 4 integer arrays of length 4, followed by
 /// 0, followed by an optional extra data section. Each of these is separated by a
 /// '-'. All of the arrays are information about the players with the leftmost data
-///  about Red and proceding clockwise. Most of this is parsed in one go, but the
-/// extra_options is just stored as a string and can be parsed if it is needed.
-///
-/// The final integer in the metadata format does not have a clear meaning I have
-/// been able to find. It seems to trigger a setting for custom position, but all
-/// fen4's are custom except the default. If you find its use, please make and issue.
+/// about Red and proceding clockwise.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Board {
     pub turn: TurnColor,
@@ -94,6 +89,7 @@ pub struct Board {
     pub castling_king: [bool; 4],
     pub castling_queen: [bool; 4],
     pub points: [u32; 4],
+    pub draw_ply: usize,
     pub extra_options: Extra,
     pub board: [[Piece; 14]; 14],
 }

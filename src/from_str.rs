@@ -148,9 +148,7 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
     let castling_king = fen4_castle_helper(meta_sections.next()?)?;
     let castling_queen = fen4_castle_helper(meta_sections.next()?)?;
     let points = fen4_point_helper(meta_sections.next()?)?;
-    if "0" != meta_sections.next()? {
-        return None;
-    }
+    let draw_ply = meta_sections.next()?.parse::<usize>().ok()?;
     let extra_options = if let Some(extra) = meta_sections.next() {
         extra.parse().ok()?
     } else {
@@ -165,6 +163,7 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
         castling_king,
         castling_queen,
         points,
+        draw_ply,
         extra_options,
         board: Default::default(),
     })

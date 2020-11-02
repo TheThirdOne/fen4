@@ -176,7 +176,7 @@ impl fmt::Display for Board {
         for p in &self.points[1..] {
             write!(f, ",{}", p)?;
         }
-        write!(f, "-0-")?;
+        write!(f, "-{}-", self.draw_ply)?;
         if self.extra_options != Extra::default() {
             write!(f, "{{{}}}-", self.extra_options)?;
         }
