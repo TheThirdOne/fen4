@@ -88,7 +88,7 @@ pub struct Board {
     pub dead: [bool; 4],
     pub castling_king: [bool; 4],
     pub castling_queen: [bool; 4],
-    pub points: [u32; 4],
+    pub points: [u16; 4],
     pub draw_ply: usize,
     pub extra_options: Extra,
     pub board: [[Piece; 14]; 14],

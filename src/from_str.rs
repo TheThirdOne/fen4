@@ -120,13 +120,13 @@ fn fen4_castle_helper(four_digits: &str) -> Option<[bool; 4]> {
 }
 
 // Turns "0,1,2,3" into Some([0,1,2,3])
-fn fen4_point_helper(four_digits: &str) -> Option<[u32; 4]> {
+fn fen4_point_helper(four_digits: &str) -> Option<[u16; 4]> {
     let mut tmp = [0; 4];
     for (pos, val) in four_digits.split(",").enumerate() {
         if pos > 3 {
             return None;
         }
-        tmp[pos] = val.parse::<u32>().ok()?;
+        tmp[pos] = val.parse::<u16>().ok()?;
     }
     Some(tmp)
 }
