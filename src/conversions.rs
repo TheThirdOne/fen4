@@ -15,6 +15,11 @@ impl From<&(usize, usize)> for Position {
         }
     }
 }
+impl From<Position> for (usize, usize) {
+    fn from(other: Position) -> Self {
+        (other.row, other.col)
+    }
+}
 impl From<&Position> for (usize, usize) {
     fn from(other: &Position) -> Self {
         (other.row, other.col)

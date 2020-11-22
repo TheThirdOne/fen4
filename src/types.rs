@@ -1,14 +1,14 @@
 /// Position on the board e.g. a4
 ///
 /// Both row and col should be in the range 0-13.
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 pub struct Position {
     pub row: usize,
     pub col: usize,
 }
 
 /// Simple enum for colors / players.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum TurnColor {
     Red,
     Blue,
@@ -19,7 +19,7 @@ pub enum TurnColor {
 /// Color modifier for pieces
 ///
 /// Includes normal pieces, dead pieces, and dead pieces that also track which player they came from.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Color {
     Turn(TurnColor),
     Dead(Option<TurnColor>),
@@ -29,7 +29,7 @@ pub enum Color {
 /// The trick is to just use the character that the notation uses to represent that piece.
 ///
 /// Walls and empty cells are special, but everything else has a color as well.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum Piece {
     Empty,
     Wall,
@@ -82,7 +82,7 @@ impl Default for Piece {
 /// 0, followed by an optional extra data section. Each of these is separated by a
 /// '-'. All of the arrays are information about the players with the leftmost data
 /// about Red and proceding clockwise.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Board {
     pub turn: TurnColor,
     pub dead: [bool; 4],
@@ -150,22 +150,25 @@ impl Default for Board {
 ///     - Both seem to be neccesssary for the "DeadKingWalking" feature.
 ///
 /// The labels have a preferred order. For the known lables this is royal/kingSquares,
-/// lives, resigned, flagged, enPassant, pawnBaseRank. uniquify is after lives,
+/// lives, resigned, flagged, enPassant, pawnsBaseRank. uniquify is after lives,
 /// but otherwise does not have a clear position.
 ///
 /// gameOver is an additional option, but only seems to appear in internal messages.
 /// It would fit between flagged and enPassant in terms of preferred order and stores
 /// the message that shows up at the end of the game.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Extra {
     pub royal: [Option<Position>; 4],
     pub lives: Option<[usize; 4]>,
     pub resigned: [bool; 4],
     pub flagged: [bool; 4],
-    // TODO: zombie options
+    pub stalemated: [bool; 4],
+    pub zombie_immune: [bool; 4],
+    pub zombie_type: [String; 4],
     pub enpassant: [Option<(Position, Position)>; 4],
     pub pawnbaserank: usize,
     pub uniquify: usize,
+    pub std2pc: bool,
 }
 
 impl Default for Extra {
@@ -175,9 +178,13 @@ impl Default for Extra {
             lives: None,
             resigned: Default::default(),
             flagged: Default::default(),
+            stalemated: Default::default(),
+            zombie_immune: Default::default(),
+            zombie_type: Default::default(),
             enpassant: Default::default(),
             pawnbaserank: 2,
             uniquify: 0,
+            std2pc: false,
         }
     }
 }

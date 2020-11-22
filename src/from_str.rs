@@ -6,8 +6,8 @@ use crate::types::*;
 
 use thiserror::Error;
 
-#[derive(Error, PartialEq, Clone, Debug)]
-pub enum PositionError {
+#[derive(Error, PartialEq, Eq, Clone, Debug)]
+pub enum PositionParseError {
     #[error("'{0}' is not a valid column. Valid columns are 'a'-'n'")]
     ColumnInvalid(char),
     #[error("'{0}' is not a valid row. Valid rows are 1-14")]
@@ -17,12 +17,12 @@ pub enum PositionError {
 }
 
 impl FromStr for Position {
-    type Err = PositionError;
+    type Err = PositionParseError;
     fn from_str(small: &str) -> Result<Self, Self::Err> {
         let mut iter = small.chars();
-        let column_letter = iter.next().ok_or(PositionError::Other)?;
+        let column_letter = iter.next().ok_or(PositionParseError::Other)?;
         if column_letter > 'n' || column_letter < 'a' {
-            return Err(PositionError::ColumnInvalid(column_letter));
+            return Err(PositionParseError::ColumnInvalid(column_letter));
         }
 
         let a: u32 = 'a'.into();
@@ -33,30 +33,20 @@ impl FromStr for Position {
         let number_str = iter.as_str();
         let row = number_str
             .parse::<usize>()
-            .map_err(|_| PositionError::Other)?;
+            .map_err(|_| PositionParseError::Other)?;
         if row == 0 || row > 14 {
-            return Err(PositionError::RowInvalid(row));
+            return Err(PositionParseError::RowInvalid(row));
         }
         Ok(Position { col, row: row - 1 })
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Error, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PieceParseError {
+    #[error("Bad Color '{0}'. Only 'r', 'b', 'y', 'g', and 'd' are valid colors.")]
     BadColor(char),
+    #[error("Bad Size {0}. Pieces like \"X\" , \"rK\" or \"drK\" are the only valid types. Longer strings are generally invalid and empty string is purposly left out.")]
     BadSize(usize),
 }
-
-impl std::fmt::Display for PieceParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use PieceParseError::*;
-        match self {
-            BadColor(c) => write!(f,"Bad Color '{}'. Only 'r', 'b', 'y', 'g', and 'd' are valid colors.",c),
-            BadSize(s) => write!(f,"Bad Size {}. Pieces like \"X\" , \"rK\" or \"drK\" are the only valid types. Longer strings are generally invalid and empty string is purposly left out.",s),
-        }
-    }
-}
-
-impl std::error::Error for PieceParseError {}
 
 impl FromStr for Piece {
     type Err = PieceParseError;
@@ -100,64 +90,66 @@ impl FromStr for Piece {
     }
 }
 // Turns "0,1,1,0" into Some([false,true,true,false])
-fn fen4_castle_helper(four_digits: &str) -> Option<[bool; 4]> {
+fn fen4_castle_helper(four_digits: &str) -> Result<[bool; 4], MetaDataParseError> {
+    use MetaDataParseError::BadComma;
     let mut tmp = [false; 4];
     let mut count = 0;
     for (pos, val) in four_digits.split(",").enumerate() {
         if pos > 3 {
-            return None;
+            return Err(BadComma);
         }
         count = pos;
         if val != "0" && val != "1" {
-            return None;
+            return Err(BadComma);
         }
         tmp[pos] = val != "0";
     }
     if count != 3 {
-        return None;
+        return Err(BadComma);
     }
-    Some(tmp)
+    Ok(tmp)
 }
 
 // Turns "0,1,2,3" into Some([0,1,2,3])
-fn fen4_point_helper(four_digits: &str) -> Option<[u16; 4]> {
+fn fen4_point_helper(four_digits: &str) -> Result<[u16; 4], MetaDataParseError> {
     let mut tmp = [0; 4];
     for (pos, val) in four_digits.split(",").enumerate() {
         if pos > 3 {
-            return None;
+            return Err(MetaDataParseError::BadComma);
         }
-        tmp[pos] = val.parse::<u16>().ok()?;
+        tmp[pos] = val.parse::<u16>()?;
     }
-    Some(tmp)
+    Ok(tmp)
 }
 
 // Parses the entire metadata minus the last dash and makes a Board with that data filled in
-fn parse_meta(meta_data: &str) -> Option<Board> {
+fn parse_meta(meta_data: &str) -> Result<Board, MetaDataParseError> {
+    use MetaDataParseError::*;
     let mut meta_sections = meta_data.split("-");
 
-    let color_str = meta_sections.next()?;
+    let color_str = meta_sections.next().ok_or(BadDash)?;
     let turn = match color_str {
         "R" => TurnColor::Red,
         "B" => TurnColor::Blue,
         "Y" => TurnColor::Yellow,
         "G" => TurnColor::Green,
-        _ => return None,
+        _ => return Err(BadColor),
     };
 
-    let dead = fen4_castle_helper(meta_sections.next()?)?;
-    let castling_king = fen4_castle_helper(meta_sections.next()?)?;
-    let castling_queen = fen4_castle_helper(meta_sections.next()?)?;
-    let points = fen4_point_helper(meta_sections.next()?)?;
-    let draw_ply = meta_sections.next()?.parse::<usize>().ok()?;
+    let dead = fen4_castle_helper(meta_sections.next().ok_or(BadDash)?)?;
+    let castling_king = fen4_castle_helper(meta_sections.next().ok_or(BadDash)?)?;
+    let castling_queen = fen4_castle_helper(meta_sections.next().ok_or(BadDash)?)?;
+    let points = fen4_point_helper(meta_sections.next().ok_or(BadDash)?)?;
+    let draw_ply = meta_sections.next().ok_or(BadDash)?.parse::<usize>()?;
     let extra_options = if let Some(extra) = meta_sections.next() {
-        extra.parse().ok()?
+        extra.parse()?
     } else {
         Extra::default()
     };
     if None != meta_sections.next() {
-        return None;
+        return Err(BadDash);
     }
-    Some(Board {
+    Ok(Board {
         turn,
         dead,
         castling_king,
@@ -169,17 +161,18 @@ fn parse_meta(meta_data: &str) -> Option<Board> {
     })
 }
 
-fn split_array(array: &str) -> Result<[&str; 4], ()> {
+fn split_array(array: &str) -> Result<[&str; 4], MetaDataParseError> {
+    use MetaDataParseError::*;
     let trimmed = array
         .strip_prefix('(')
-        .ok_or(())?
+        .ok_or(BadParen)?
         .strip_suffix(')')
-        .ok_or(())?;
+        .ok_or(BadParen)?;
     let mut out = [""; 4];
     let mut i = 0;
     for part in trimmed.split(',') {
         if i > 3 {
-            return Err(());
+            return Err(BadComma);
         }
         out[i] = part;
         i += 1;
@@ -187,28 +180,57 @@ fn split_array(array: &str) -> Result<[&str; 4], ()> {
     if i == 4 {
         Ok(out)
     } else {
-        Err(())
+        Err(BadComma)
     }
 }
 
+#[derive(Error, Clone, PartialEq, Eq, Debug)]
+pub enum MetaDataParseError {
+    #[error("There should be either 6 or 7 dashes in the metadata")]
+    BadDash,
+    #[error("There should be only two curly braces and they should only be present if there are tagged values")]
+    BadCurly,
+    #[error("All tags should be surrounded by single quotes")]
+    BadQuote,
+    #[error("Colons should separate tag keys and values")]
+    BadColon,
+    #[error("Parens should be balanced and only occur within ")]
+    BadParen,
+    #[error("Only 'R', 'G', 'Y', or 'B' are valid turn colors")]
+    BadColor,
+    #[error("Commas should separate arrays and extra tags")]
+    BadComma,
+    #[error("Some tag occurred twice")]
+    RepeatedTag,
+    #[error("Only true and false are valid boolean values")]
+    BadBoolean,
+    #[error("Tag '{0}' is not expected")]
+    UnknownTag(String),
+    #[error("Somewhere a Position was expected it failed to parse because of {0}")]
+    BadPosition(#[from] PositionParseError),
+    #[error("Somewhere a number was expected it failed to parse becauses of {0}")]
+    BadNumber(#[from] ParseIntError),
+}
+
 impl FromStr for Extra {
-    type Err = ();
+    type Err = MetaDataParseError;
     fn from_str(tagged: &str) -> Result<Self, Self::Err> {
-        let mut current = tagged.strip_prefix('{').ok_or(())?;
+        use MetaDataParseError::*;
+        let mut current = tagged.strip_prefix('{').ok_or(BadCurly)?;
         let mut extras: Self = Default::default();
         if current == "}" || !current.ends_with('}') {
-            return Err(());
+            return Err(BadCurly);
         }
         while let Some(separator) = current.find(':') {
             let (label, rest) = current.split_at(separator);
             current = rest.split_at(1).1;
             let label_trimmed = label
                 .strip_prefix('\'')
-                .ok_or(())?
+                .ok_or(BadQuote)?
                 .strip_suffix('\'')
-                .ok_or(())?;
+                .ok_or(BadQuote)?;
             let value_end = if current.starts_with('(') {
-                current.find(')').ok_or(())? + 1
+                current.find(')').ok_or(BadParen)? + 1
             } else {
                 current.find(|c| c == ',' || c == '}').unwrap()
             };
@@ -220,24 +242,22 @@ impl FromStr for Extra {
                     let mut i = 0;
                     for pair in &array {
                         if extras.enpassant[i] != None {
-                            return Err(());
+                            return Err(RepeatedTag);
                         }
                         let trimmed = pair
                             .strip_prefix('\'')
-                            .ok_or(())?
+                            .ok_or(BadQuote)?
                             .strip_suffix('\'')
-                            .ok_or(())?;
+                            .ok_or(BadQuote)?;
                         if trimmed != "" {
                             let mut split = trimmed.split(':');
-                            let first = split.next().ok_or(())?;
-                            let second = split.next().ok_or(())?;
+                            let first = split.next().ok_or(BadColon)?;
+                            let second = split.next().ok_or(BadColon)?;
                             if split.next() != None {
-                                return Err(());
+                                return Err(BadColon);
                             }
-                            extras.enpassant[i] = Some((
-                                first.parse::<Position>().map_err(|_| ())?,
-                                second.parse::<Position>().map_err(|_| ())?,
-                            ));
+                            extras.enpassant[i] =
+                                Some((first.parse::<Position>()?, second.parse::<Position>()?));
                         }
                         i += 1;
                     }
@@ -247,68 +267,96 @@ impl FromStr for Extra {
                     let mut i = 0;
                     for position in &array {
                         if extras.royal[i] != None {
-                            return Err(());
+                            return Err(RepeatedTag);
                         }
                         let trimmed = position
                             .strip_prefix('\'')
-                            .ok_or(())?
+                            .ok_or(BadQuote)?
                             .strip_suffix('\'')
-                            .ok_or(())?;
+                            .ok_or(BadQuote)?;
                         if trimmed != "" {
-                            extras.royal[i] = Some(trimmed.parse::<Position>().map_err(|_| ())?);
+                            extras.royal[i] = Some(trimmed.parse::<Position>()?);
                         }
                         i += 1;
                     }
                 }
-                "pawnBaseRank" | "uniquify" => {
-                    let number = value.parse::<usize>().map_err(|_| ())?;
+                "pawnsBaseRank" | "uniquify" => {
+                    let number = value.parse::<usize>()?;
                     if label_trimmed == "uniquify" {
                         extras.uniquify = number;
                     } else {
                         extras.pawnbaserank = number;
                     }
                 }
-                "resigned" | "flagged" => {
+                "resigned" | "flagged" | "stalemated" | "zombieImmune" => {
                     let array = split_array(value)?;
                     let mut i = 0;
                     let output = if label_trimmed == "flagged" {
                         &mut extras.flagged
-                    } else {
+                    } else if label_trimmed == "resigned" {
                         &mut extras.resigned
+                    } else if label_trimmed == "stalemated" {
+                        &mut extras.stalemated
+                    } else {
+                        &mut extras.zombie_immune
                     };
                     for truth in &array {
                         if output[i] {
-                            return Err(());
+                            return Err(RepeatedTag);
                         }
                         output[i] = match *truth {
                             "true" => true,
                             "false" => false,
-                            _ => return Err(()),
+                            "null" => false,
+                            _ => return Err(BadBoolean),
                         };
                         i += 1;
                     }
+                }
+                "std2pc" => {
+                    extras.std2pc = match value {
+                        "true" => true,
+                        "false" => false,
+                        _ => return Err(BadBoolean),
+                    };
                 }
                 "lives" => {
                     let array = split_array(value)?;
                     let mut i = 0;
                     if extras.lives != None {
-                        return Err(());
+                        return Err(RepeatedTag);
                     }
                     let mut tmp = [0; 4];
                     for life in &array {
-                        tmp[i] = life.parse::<usize>().map_err(|_| ())?;
+                        tmp[i] = life.parse::<usize>()?;
                         i += 1;
                     }
                     extras.lives = Some(tmp);
                 }
-                _ => {
-                    return Err(());
+                "zombieType" => {
+                    let array = split_array(value)?;
+                    let mut i = 0;
+                    for pair in &array {
+                        if extras.zombie_type[i] != "" {
+                            return Err(RepeatedTag);
+                        }
+                        let trimmed = pair
+                            .strip_prefix('\'')
+                            .ok_or(BadQuote)?
+                            .strip_suffix('\'')
+                            .ok_or(BadQuote)?;
+                        extras.zombie_type[i] = trimmed.into();
+                        i += 1;
+                    }
+                }
+                s => {
+                    return Err(UnknownTag(String::from(s)));
                 }
             }
             if current == "}" {
                 break;
             }
-            current = current.strip_prefix(',').ok_or(())?;
+            current = current.strip_prefix(',').ok_or(BadComma)?;
         }
         Ok(extras)
     }
@@ -317,7 +365,7 @@ impl FromStr for Extra {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BoardParseError {
     NoDash,
-    BadMetaData,
+    BadMetaData(MetaDataParseError),
     BadBoardSize(BoardSize, usize),
     EmptySegment(usize, usize),
     BadSegmentNumber(usize, usize, ParseIntError),
@@ -338,7 +386,7 @@ impl std::fmt::Display for BoardParseError {
         use BoardSize::*;
         match self {
             NoDash => write!(f,"No '-' was found in the fen. Fen4's should start with metadata about castling, turn, and more."),
-            BadMetaData => write!(f,"Something went wrong with metadata parsing"),
+            BadMetaData(me) => write!(f,"Something went wrong with metadata parsing: {}",me),
             BadBoardSize(bs,row) => match bs {
                 TooManyColumns => write!(f,"Too many columns in row {}.",row),
                 TooFewColumns=> write!(f,"Not enough columns in row {}.", row),
@@ -368,7 +416,7 @@ impl FromStr for Board {
         let meta_data = &fen[..last_dash];
         let board = &fen[last_dash + 1..];
 
-        let mut board_base = parse_meta(meta_data).ok_or(BadMetaData)?;
+        let mut board_base = parse_meta(meta_data).map_err(|e| BadMetaData(e))?;
         let mut row = 14;
         // There is a lot of error handling obscuring the fact that this is actually really simple
         // We keep track of where we are, starting at (14,0) and move to the right as we fill in cells. Finishing a row decreases our row by 1 and resets our column.

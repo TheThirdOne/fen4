@@ -5,7 +5,6 @@ use crate::types::*;
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.row >= 14 || self.col >= 14 {
-            eprintln!("BAD POSITION {} {}", self.row, self.col);
             return Err(fmt::Error);
         }
         let column_letter: char = ((self.col as u8) + b'a').into();
@@ -114,6 +113,45 @@ impl fmt::Display for Extra {
                 )?;
                 comma = true;
             }
+            if self.stalemated != [false; 4] {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(
+                    f,
+                    "'stalemated':({:?},{:?},{:?},{:?})",
+                    self.stalemated[0], self.stalemated[1], self.stalemated[2], self.stalemated[3]
+                )?;
+                comma = true;
+            }
+            if self.zombie_immune != [false; 4] {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(
+                    f,
+                    "'zombieImmune':({:?},{:?},{:?},{:?})",
+                    self.zombie_immune[0],
+                    self.zombie_immune[1],
+                    self.zombie_immune[2],
+                    self.zombie_immune[3]
+                )?;
+                comma = true;
+            }
+            if self.zombie_type != [""; 4] {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(
+                    f,
+                    "'zombieType':('{}','{}','{}','{}')",
+                    self.zombie_type[0],
+                    self.zombie_type[1],
+                    self.zombie_type[2],
+                    self.zombie_type[3]
+                )?;
+                comma = true;
+            }
             if &self.enpassant != &[None, None, None, None] {
                 if comma {
                     write!(f, ",")?;
@@ -133,7 +171,7 @@ impl fmt::Display for Extra {
                 if comma {
                     write!(f, ",")?;
                 }
-                write!(f, "'pawnBaseRank':{}", self.pawnbaserank)?;
+                write!(f, "'pawnsBaseRank':{}", self.pawnbaserank)?;
                 comma = true;
             }
             if self.uniquify != 0 {
@@ -141,6 +179,12 @@ impl fmt::Display for Extra {
                     write!(f, ",")?;
                 }
                 write!(f, "'uniquify':{}", self.uniquify)?;
+            }
+            if self.std2pc {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(f, "'std2pc':true")?;
             }
         }
         Ok(())
