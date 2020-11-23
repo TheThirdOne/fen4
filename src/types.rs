@@ -148,13 +148,18 @@ impl Default for Board {
 ///     - It is not clear what this actually does
 ///   - `'resigned':(true,true,false,false)` and `'flagged':(false,true,false,false)`
 ///     - Both seem to be neccesssary for the "DeadKingWalking" feature.
+///   - `'stalemated':(true,true,false,false)`
+///     - It is not clear this has any effect, but it might affect the "DeadKingWalking" feature. 
+///   - `'zombieImmune':(true,false,false,true)`
+///     - Makes zombie pieces impossible to capture
+///   - `'zombieType':('','','','muncher')`
+///     - Used to change the behaviour of zombies
+///     - Possible types include muncher, comfuter, checker, ranter, and possibly more
 ///
-/// The labels have a preferred order. For the known lables this is royal/kingSquares,
-/// lives, resigned, flagged, enPassant, pawnsBaseRank. uniquify is after lives,
-/// but otherwise does not have a clear position.
+/// The labels have a preferred order. The preferred order is the order of the fields of the struct.
 ///
 /// gameOver is an additional option, but only seems to appear in internal messages.
-/// It would fit between flagged and enPassant in terms of preferred order and stores
+/// It would fit somwhere between flagged and enPassant in terms of preferred order and stores
 /// the message that shows up at the end of the game.
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Extra {

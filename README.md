@@ -15,7 +15,7 @@ non-standard pieces).
 Cargo.toml
 ```
 [dependencies]
-fen4 = "0.1"
+fen4 = "0.3"
 ```
 
 ```rust
@@ -27,5 +27,6 @@ fn main(){
 ```
 ### Rust version requirements
 
-fen4 requires Rustc version 1.32 or greater. This could certainly be lowered,
-but it is unlikely to be needed and would be a non-trivial amount of work.
+fen4 requires rustc version 1.45 or greater. This is for `str.strip_prefix`;
+working arount this requirement would move support needed back to around 1.32.
+
