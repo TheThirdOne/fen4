@@ -25,6 +25,15 @@ pub enum Color {
     Dead(Option<TurnColor>),
 }
 
+impl Color {
+    pub fn is_dead(self) -> bool {
+        match self {
+            Self::Dead(_) => true,
+            _ => false,
+        }
+    }
+}
+
 /// Simple representation of pieces that allows all types of fairy pieces
 /// The trick is to just use the character that the notation uses to represent that piece.
 ///
@@ -116,6 +125,62 @@ impl Default for Board {
     }
 }
 
+impl Board {
+    pub fn chess960(mut N: u16) -> Board {
+        N -= 1; // chess.com used 1-960
+                // Mapping derived from
+                // https://en.wikipedia.org/wiki/Fischer_Random_Chess_numbering_scheme#Direct_derivation
+        let B1 = 2 * (N % 4) + 1;
+        let N2 = N / 4;
+        let B2 = 2 * (N2 % 4);
+        let N3 = N2 / 4;
+        let Q = N3 % 6;
+        let N4 = N3 / 6;
+        let knights = N4 % 10; // Instead of making N > 960 invalid, just work on N % 960
+        let mut back_row = ['P'; 8];
+        back_row[B1 as usize] = 'B';
+        back_row[B2 as usize] = 'B';
+        fn place(mut empties: u16, to_place: char, buffer: &mut [char]) {
+            let mut i = 0;
+            loop {
+                if empties == 0 && buffer[i] == 'P' {
+                    break;
+                }
+                if buffer[i] == 'P' {
+                    empties -= 1;
+                }
+                i += 1;
+            }
+            buffer[i] = to_place;
+        }
+        place(Q, 'Q', &mut back_row);
+        let (knight1, knight2) = [
+            (0, 0),
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (1, 1),
+            (1, 2),
+            (1, 3),
+            (2, 2),
+            (2, 3),
+            (3, 3),
+        ][knights as usize];
+        place(knight1, 'N', &mut back_row);
+        place(knight2, 'N', &mut back_row);
+        place(0, 'R', &mut back_row);
+        place(0, 'K', &mut back_row);
+        place(0, 'R', &mut back_row);
+        let mut output = Board::default();
+        for i in 0..8 {
+            output.board[0][i + 3] = Piece::Normal(Color::Turn(TurnColor::Red), back_row[i]);
+            output.board[i + 3][0] = Piece::Normal(Color::Turn(TurnColor::Blue), back_row[i]);
+            output.board[13][10 - i] = Piece::Normal(Color::Turn(TurnColor::Yellow), back_row[i]);
+            output.board[10 - i][13] = Piece::Normal(Color::Turn(TurnColor::Green), back_row[i]);
+        }
+        output
+    }
+}
 /// Additional options in the FEN4 format stored as a list of key value pairs.
 ///
 /// In addition to the always present options in a FEN4, there are also options
@@ -149,7 +214,7 @@ impl Default for Board {
 ///   - `'resigned':(true,true,false,false)` and `'flagged':(false,true,false,false)`
 ///     - Both seem to be neccesssary for the "DeadKingWalking" feature.
 ///   - `'stalemated':(true,true,false,false)`
-///     - It is not clear this has any effect, but it might affect the "DeadKingWalking" feature. 
+///     - It is not clear this has any effect, but it might affect the "DeadKingWalking" feature.
 ///   - `'zombieImmune':(true,false,false,true)`
 ///     - Makes zombie pieces impossible to capture
 ///   - `'zombieType':('','','','muncher')`
