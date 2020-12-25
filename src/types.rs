@@ -50,6 +50,22 @@ impl Default for Piece {
         Piece::Empty
     }
 }
+
+impl Piece {
+    pub fn is_piece(&self) -> bool {
+        match self {
+            Piece::Normal(_, _) => true,
+            _ => false,
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Piece::Empty => true,
+            _ => false,
+        }
+    }
+}
+
 /// The board representation of a 4 player chess game.
 /// Board can be converted to and from a String in the fen4 format
 ///     
@@ -126,20 +142,20 @@ impl Default for Board {
 }
 
 impl Board {
-    pub fn chess960(mut N: u16) -> Board {
-        N -= 1; // chess.com used 1-960
+    pub fn chess960(mut n: u16) -> Board {
+        n -= 1; // chess.com used 1-960
                 // Mapping derived from
                 // https://en.wikipedia.org/wiki/Fischer_Random_Chess_numbering_scheme#Direct_derivation
-        let B1 = 2 * (N % 4) + 1;
-        let N2 = N / 4;
-        let B2 = 2 * (N2 % 4);
-        let N3 = N2 / 4;
-        let Q = N3 % 6;
-        let N4 = N3 / 6;
-        let knights = N4 % 10; // Instead of making N > 960 invalid, just work on N % 960
+        let b1 = 2 * (n % 4) + 1;
+        let n2 = n / 4;
+        let b2 = 2 * (n2 % 4);
+        let n3 = n2 / 4;
+        let q = n3 % 6;
+        let n4 = n3 / 6;
+        let knights = n4 % 10; // Instead of making N > 960 invalid, just work on N % 960
         let mut back_row = ['P'; 8];
-        back_row[B1 as usize] = 'B';
-        back_row[B2 as usize] = 'B';
+        back_row[b1 as usize] = 'B';
+        back_row[b2 as usize] = 'B';
         fn place(mut empties: u16, to_place: char, buffer: &mut [char]) {
             let mut i = 0;
             loop {
@@ -153,7 +169,7 @@ impl Board {
             }
             buffer[i] = to_place;
         }
-        place(Q, 'Q', &mut back_row);
+        place(q, 'Q', &mut back_row);
         let (knight1, knight2) = [
             (0, 0),
             (0, 1),

@@ -26,7 +26,7 @@ bB,bP,10,gP,gR/
 3,rP,rP,rP,rP,rP,rP,rP,rP,3/
 3,rB,rB,rQ,rN,rN,rR,rK,rR,3";
     let board: Board = fen.parse().unwrap();
-    let board960 = Board::chess960(0);
+    let board960 = Board::chess960(1);
     println!("{} \n vs \n{} ", board, board960);
     assert_eq!(board, board960);
 }

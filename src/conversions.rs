@@ -1,4 +1,4 @@
-use crate::{Position, TurnColor};
+use crate::{Color, Position, TurnColor};
 use std::convert::From;
 
 impl From<(usize, usize)> for Position {
@@ -15,6 +15,7 @@ impl From<&(usize, usize)> for Position {
         }
     }
 }
+
 impl From<Position> for (usize, usize) {
     fn from(other: Position) -> Self {
         (other.row, other.col)
@@ -40,5 +41,17 @@ impl From<&TurnColor> for usize {
             Yellow => 2,
             Green => 3,
         }
+    }
+}
+impl From<usize> for Color {
+    fn from(index: usize) -> Self {
+        use TurnColor::*;
+        Color::Turn(match index {
+            0 => Red,
+            1 => Blue,
+            2 => Yellow,
+            3 => Green,
+            _ => return Color::Dead(None),
+        })
     }
 }
