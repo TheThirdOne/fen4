@@ -12,6 +12,21 @@ impl fmt::Display for Position {
     }
 }
 
+impl fmt::Display for TurnColor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                TurnColor::Red => "R",
+                TurnColor::Blue => "B",
+                TurnColor::Yellow => "Y",
+                TurnColor::Green => "G",
+            }
+        )
+    }
+}
+
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
