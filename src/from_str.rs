@@ -6,21 +6,28 @@ use crate::types::*;
 
 use thiserror::Error;
 
+/// Enum to store all ways [`Position`] can fail to parse
 #[derive(Error, PartialEq, Eq, Clone, Debug)]
 pub enum PositionParseError {
     #[error("'{0}' is not a valid column. Valid columns are 'a'-'n'")]
     ColumnInvalid(char),
     #[error("'{0}' is not a valid row. Valid rows are 1-14")]
     RowInvalid(usize),
-    #[error("Position is malformed. Positions should take the form \"a4\"")]
-    Other,
+    #[error("All positions are between 2-3 characters long; This position is {0} characters long")]
+    BadSize(usize),
+    #[error("Row failed to parse as a number because {0}")]
+    RowNotNumber(#[from] std::num::ParseIntError),
 }
 
 impl FromStr for Position {
     type Err = PositionParseError;
     fn from_str(small: &str) -> Result<Self, Self::Err> {
+        let len = small.len();
+        if len < 2 || len > 3 {
+            return Err(PositionParseError::BadSize(len));
+        }
         let mut iter = small.chars();
-        let column_letter = iter.next().ok_or(PositionParseError::Other)?;
+        let column_letter = iter.next().unwrap(); // Guaranteed to succeed because of `if len` above
         if column_letter > 'n' || column_letter < 'a' {
             return Err(PositionParseError::ColumnInvalid(column_letter));
         }
@@ -28,18 +35,18 @@ impl FromStr for Position {
         let a: u32 = 'a'.into();
         let mut column_num: u32 = column_letter.into();
         column_num -= a;
-        let col: usize = column_num.try_into().unwrap(); // If earlier should guarentee this succeeds
+        let col: usize = column_num.try_into().unwrap(); // The `if column_letter` earlier should guarantee this succeeds
 
         let number_str = iter.as_str();
-        let row = number_str
-            .parse::<usize>()
-            .map_err(|_| PositionParseError::Other)?;
+        let row = number_str.parse::<usize>()?;
         if row == 0 || row > 14 {
             return Err(PositionParseError::RowInvalid(row));
         }
         Ok(Position { col, row: row - 1 })
     }
 }
+
+/// Enum to store all ways [`Piece`] can fail to parse
 #[derive(Error, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PieceParseError {
     #[error("Bad Color '{0}'. Only 'r', 'b', 'y', 'g', and 'd' are valid colors.")]
@@ -184,6 +191,7 @@ fn split_array(array: &str) -> Result<[&str; 4], MetaDataParseError> {
     }
 }
 
+/// Enum to store all ways [`Extra`] can fail to parse
 #[derive(Error, Clone, PartialEq, Eq, Debug)]
 pub enum MetaDataParseError {
     #[error("There should be either 6 or 7 dashes in the metadata")]
@@ -362,6 +370,7 @@ impl FromStr for Extra {
     }
 }
 
+/// Enum to store all ways [`Board`] can fail to parse
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BoardParseError {
     NoDash,

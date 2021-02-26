@@ -7,13 +7,32 @@ pub struct Position {
     pub col: usize,
 }
 
-/// Simple enum for colors / players.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+/// Simple enum for used to denote a turn / player.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum TurnColor {
     Red,
     Blue,
     Yellow,
     Green,
+}
+
+impl TurnColor {
+    /// Rotates through colors in a clockwise direction
+    ///
+    /// ```
+    /// # use fen4::TurnColor;
+    /// assert_eq!(TurnColor::Blue, TurnColor::Red.next());
+    /// assert_eq!(TurnColor::Red, TurnColor::Green.next());
+    /// ```
+    pub fn next(&self) -> Self {
+        use TurnColor::*;
+        match self {
+            Red => Blue,
+            Blue => Yellow,
+            Yellow => Green,
+            Green => Red,
+        }
+    }
 }
 
 /// Color modifier for pieces
