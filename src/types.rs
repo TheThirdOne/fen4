@@ -1,7 +1,7 @@
 /// Position on the board e.g. a4
 ///
 /// Both row and col should be in the range 0-13.
-#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash, PartialOrd, Ord)]
 pub struct Position {
     pub row: usize,
     pub col: usize,
