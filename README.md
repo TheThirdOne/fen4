@@ -15,7 +15,7 @@ non-standard pieces).
 Cargo.toml
 ```
 [dependencies]
-fen4 = "0.5"
+fen4 = "0.6"
 ```
 
 ```rust
