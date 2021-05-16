@@ -357,6 +357,14 @@ impl FromStr for Extra {
                         i += 1;
                     }
                 }
+                "gameOver" => {
+                    let trimmed = value
+                        .strip_prefix('\'')
+                        .ok_or(BadQuote)?
+                        .strip_suffix('\'')
+                        .ok_or(BadQuote)?;
+                    extras.game_over = trimmed.into();
+                }
                 s => {
                     return Err(UnknownTag(String::from(s)));
                 }

@@ -176,6 +176,13 @@ impl fmt::Display for Extra {
                 )?;
                 comma = true;
             }
+            if self.game_over != "" {
+                if comma {
+                    write!(f, ",")?;
+                }
+                write!(f, "'gameOver':'{}'", self.game_over)?;
+                comma = true;
+            }
             if self.zombie_immune != [false; 4] {
                 if comma {
                     write!(f, ",")?;

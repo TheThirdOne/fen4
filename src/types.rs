@@ -261,6 +261,9 @@ impl Board {
 /// gameOver is an additional option, but only seems to appear in internal messages.
 /// It would fit somwhere between flagged and enPassant in terms of preferred order and stores
 /// the message that shows up at the end of the game.
+///
+/// This will also use gameOver to represent final messages, but will not specifically try to be
+/// compatable with chess.com's internal messages.
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Extra {
     pub royal: [Option<Position>; 4],
@@ -268,6 +271,7 @@ pub struct Extra {
     pub resigned: [bool; 4],
     pub flagged: [bool; 4],
     pub stalemated: [bool; 4],
+    pub game_over: String,
     pub zombie_immune: [bool; 4],
     pub zombie_type: [String; 4],
     pub enpassant: [Option<(Position, Position)>; 4],
@@ -284,6 +288,7 @@ impl Default for Extra {
             resigned: Default::default(),
             flagged: Default::default(),
             stalemated: Default::default(),
+            game_over: "".into(),
             zombie_immune: Default::default(),
             zombie_type: Default::default(),
             enpassant: Default::default(),
