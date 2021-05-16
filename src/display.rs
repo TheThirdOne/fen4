@@ -61,6 +61,43 @@ impl fmt::Display for Piece {
     }
 }
 
+struct BoardHelper<'a>(&'a [[Piece; 14]; 14]);
+struct RowHelper<'a>(&'a [Piece; 14]);
+impl fmt::Debug for BoardHelper<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_list()
+            .entries(self.0.iter().map(|row| RowHelper(row)))
+            .finish()
+    }
+}
+impl fmt::Debug for RowHelper<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        let mut first = true;
+        for p in self.0 {
+            if !first {
+                write!(f, ",")?;
+            }
+            write!(f, "{}", p)?;
+            first = false;
+        }
+        write!(f, "]")
+    }
+}
+impl fmt::Debug for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut out = f.debug_struct("Board");
+        out.field("turn", &self.turn);
+        out.field("dead", &self.dead);
+        out.field("castling_king", &self.castling_king);
+        out.field("castling_queen", &self.castling_queen);
+        out.field("points", &self.points);
+        out.field("draw_ply", &self.draw_ply);
+        out.field("extra_options", &self.extra_options);
+        out.field("board", &BoardHelper(&self.board));
+        out.finish()
+    }
+}
 impl fmt::Display for Extra {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fn royal_helper(f: &mut fmt::Formatter<'_>, value: &Option<Position>) -> fmt::Result {

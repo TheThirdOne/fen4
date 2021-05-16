@@ -126,7 +126,7 @@ impl Piece {
 /// 0, followed by an optional extra data section. Each of these is separated by a
 /// '-'. All of the arrays are information about the players with the leftmost data
 /// about Red and proceding clockwise.
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(PartialEq, Eq, Clone, Hash)]
 pub struct Board {
     pub turn: TurnColor,
     pub dead: [bool; 4],
